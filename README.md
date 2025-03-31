@@ -1,5 +1,5 @@
-# genesis
-pip install list
-git
-pytorch
-tensorboard
+# Genesis Study
+pip install list  
+1. git  
+2. pytorch  
+3. tensorboard  
