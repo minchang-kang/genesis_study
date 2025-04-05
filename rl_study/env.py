@@ -259,3 +259,21 @@ class Go2Env:
     def _reward_base_height(self):
         # Penalize base height away from target
         return torch.square(self.base_pos[:, 2] - self.reward_cfg["base_height_target"])
+
+    # ------------print buffers-----------------------------
+    def print_buffers(self, env_idx=0):
+        print(f"\n [Environment {env_idx}] Buffer Summary")
+        print("-" * 50)
+        print(f"obs_buf         : {self.obs_buf[env_idx]}")
+        print(f"rew_buf         : {self.rew_buf[env_idx].item()}")
+        print(f"reset_buf       : {self.reset_buf[env_idx].item()}")
+        print(f"episode_length  : {self.episode_length_buf[env_idx].item()}")
+        print(f"base_pos        : {self.base_pos[env_idx]}")
+        print(f"base_quat       : {self.base_quat[env_idx]}")
+        print(f"base_lin_vel    : {self.base_lin_vel[env_idx]}")
+        print(f"base_ang_vel    : {self.base_ang_vel[env_idx]}")
+        print(f"commands        : {self.commands[env_idx]}")
+        print(f"actions         : {self.actions[env_idx]}")
+        print(f"dof_pos         : {self.dof_pos[env_idx]}")
+        print(f"dof_vel         : {self.dof_vel[env_idx]}")
+        print("-" * 50)

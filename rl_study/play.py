@@ -4,6 +4,8 @@ import pickle
 
 import torch
 from env import Go2Env
+import sys
+sys.path.append('/home/mars/genesis/rsl_rl')
 from rsl_rl.runners import OnPolicyRunner
 
 import genesis as gs
@@ -19,6 +21,7 @@ def main():
 
     log_dir = f"logs/{args.exp_name}"
     env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg = pickle.load(open(f"logs/{args.exp_name}/cfgs.pkl", "rb"))
+    print(command_cfg)
     reward_cfg["reward_scales"] = {}
 
     env = Go2Env(
@@ -44,8 +47,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-"""
-# evaluation
-python examples/locomotion/go2_eval.py -e go2-walking -v --ckpt 100
-"""
