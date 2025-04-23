@@ -60,44 +60,33 @@ def get_train_cfg(exp_name, max_iterations):
 
 def get_cfgs():
     env_cfg = {
-        "num_actions": 12,
+        "num_actions": 7,
         # joint/link names
         "default_joint_angles": {  # [rad]
-            "FL_hip_joint": 0.0,
-            "FR_hip_joint": 0.0,
-            "RL_hip_joint": 0.0,
-            "RR_hip_joint": 0.0,
-            "FL_thigh_joint": 0.8,
-            "FR_thigh_joint": 0.8,
-            "RL_thigh_joint": 1.0,
-            "RR_thigh_joint": 1.0,
-            "FL_calf_joint": -1.5,
-            "FR_calf_joint": -1.5,
-            "RL_calf_joint": -1.5,
-            "RR_calf_joint": -1.5,
+            "body_1": 0.0,
+            "body_2": 0.0,
+            "body_3": 0.0,
+            "body_4": 0.0,
+            "body_5": 0.0,
+            "body_6": 0.0,
+            "body_7": 0.0,
         },
         "dof_names": [
-            "FR_hip_joint",
-            "FR_thigh_joint",
-            "FR_calf_joint",
-            "FL_hip_joint",
-            "FL_thigh_joint",
-            "FL_calf_joint",
-            "RR_hip_joint",
-            "RR_thigh_joint",
-            "RR_calf_joint",
-            "RL_hip_joint",
-            "RL_thigh_joint",
-            "RL_calf_joint",
+            "body_1",
+            "body_2",
+            "body_3",
+            "body_4",
+            "body_5",
+            "body_6",
+            "body_7",
         ],
         # PD
-        "kp": 20.0,
-        "kd": 0.5,
+        "kp": [4500, 4500, 3500, 3500, 2000, 2000, 2000],
+        "kd": [450, 450, 350, 350, 200, 200, 200],
         # termination
-        "termination_if_roll_greater_than": 10,  # degree
-        "termination_if_pitch_greater_than": 10,
+
         # base pose
-        "base_init_pos": [0.0, 0.0, 0.42],
+        "base_init_pos": [0.0, 0.0, 0.0],
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
         "episode_length_s": 20.0,
         "resampling_time_s": 4.0,
@@ -106,32 +95,27 @@ def get_cfgs():
         "clip_actions": 100.0,
     }
     obs_cfg = {
-        "num_obs": 45,
+        "num_obs": 24,
         "obs_scales": {
-            "lin_vel": 2.0,
-            "ang_vel": 0.25,
+            # "lin_vel": 2.0,
+            # "ang_vel": 0.25,
             "dof_pos": 1.0,
             "dof_vel": 0.05,
         },
     }
     reward_cfg = {
-        "tracking_sigma": 0.25,
-        "base_height_target": 0.3,
-        "feet_height_target": 0.075,
+        "tanh_std": 0.1,
         "reward_scales": {
-            "tracking_lin_vel": 1.0,
-            "tracking_ang_vel": 0.2,
-            "lin_vel_z": -1.0,
-            "base_height": -50.0,
-            "action_rate": -0.005,
-            "similar_to_default": -0.1,
+            "position_command_error": -0.2,
+            "position_command_error_tanh": 0.1,
+            "action_rate": -0.0001,
         },
     }
     command_cfg = {
         "num_commands": 3,
-        "lin_vel_x_range": [0.5, 0.5],
-        "lin_vel_y_range": [0, 0],
-        "ang_vel_range": [0, 0],
+        "pos_x":[0.35, 0.60],
+        "pos_y":[-0.2, 0.2],
+        "pos_z":[0.15, 0.69],
     }
 
     return env_cfg, obs_cfg, reward_cfg, command_cfg
