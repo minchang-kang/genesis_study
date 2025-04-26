@@ -4,3 +4,8 @@ pip install list
 2. pytorch  
 3. tensorboard  
 4. ipython  
+5. gymnasium  
+
+
+# git clone
+1. robomimic
