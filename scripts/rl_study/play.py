@@ -4,9 +4,7 @@ import pickle
 
 import torch
 from env import Go2Env
-import sys
-sys.path.append('/home/mars/genesis/rsl_rl')
-from rsl_rl.runners import OnPolicyRunner
+from genesis_study.rsl_rl.rsl_rl.runners import OnPolicyRunner
 
 import genesis as gs
 

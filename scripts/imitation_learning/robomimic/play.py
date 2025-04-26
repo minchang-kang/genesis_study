@@ -9,7 +9,8 @@
 
 import argparse
 
-from isaaclab.app import AppLauncher
+# from isaaclab.app import AppLauncher
+import genesis as gs
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Evaluate robomimic policy for Isaac Lab environment.")
@@ -23,7 +24,7 @@ parser.add_argument("--num_rollouts", type=int, default=1, help="Number of rollo
 parser.add_argument("--seed", type=int, default=101, help="Random seed.")
 
 # append AppLauncher cli args
-AppLauncher.add_app_launcher_args(parser)
+# AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
 args_cli = parser.parse_args()
 

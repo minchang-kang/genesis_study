@@ -1,4 +1,6 @@
 
+import genesis as gs
+
 from genesis_study.source.genesis.assets.asset_base_cfg import EntityAssetCfg, LightAssetCfg, CameraAssetCfg, FluidEmitterAssetCfg
 from genesis_study.source.genesis.assets.from_file_cfg import UrdfFileCfg
 from genesis_study.source.genesis.utils import configclass
@@ -16,14 +18,16 @@ class ObjectTableSceneCfg:
     # table = 
 
     # plane
-    plane = URDFAssetCfg(UrdfFileCfg)
+    plane = EntityAssetCfg(
+        morph = gs.morphs.URDF(file="urdf/plane/plane.urdf", fixed=True))
 
     # light = 
 
 
 @configclass
 class ActionCfg:
-    pass
+    arm_action: 
+    gripper_action: 
 
 @configclass
 class ObservationsCfg:
@@ -34,6 +38,6 @@ class TerminationsCfg:
     pass
 
 @configclass
-class WokEnvCfg:
+class TaskEnvCfg:
     pass
 

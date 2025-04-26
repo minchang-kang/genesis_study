@@ -2,7 +2,7 @@ import torch
 import math
 import genesis as gs
 from genesis.utils.geom import quat_to_xyz, transform_by_quat, inv_quat, transform_quat_by_quat
-from utils.math import combine_frame_transforms, quat_mul
+from source.utils.math import combine_frame_transforms, quat_mul
 
 
 def gs_rand_float(lower, upper, shape, device):
