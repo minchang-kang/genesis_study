@@ -1,13 +1,14 @@
 from dataclasses import MISSING
 import genesis as gs
 
+from .from_file_cfg import *
 from genesis_study.source.genesis.utils import configclass
 
 
 @configclass
 class EntityAssetCfg:
-    morph: gs.morphs.URDF = MISSING
-    meterial: gs.materials.Rigid | None = None
+    morph: URDFCfg = MISSING
+    material: gs.materials.Rigid | None = None
     surface: gs.surfaces.Surface | None = None
     visualize_contact: bool = False
     vis_mode: str | None= None
@@ -15,7 +16,7 @@ class EntityAssetCfg:
 
 @configclass
 class LightAssetCfg:
-    morph: gs.morphs = MISSING
+    morph: URDFCfg = MISSING
     color: tuple[float, float, float] = (1.0, 1.0, 1.0)
     intensity: float = 20.0
     revert_dir: bool = False

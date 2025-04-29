@@ -6,7 +6,7 @@ class FileCfg:
     file: str = MISSING
     scale: float | tuple = 1.0
     pos: tuple = (0.0, 0.0, 0.0)
-    euler: tuple = (0.0, 0.0, 0.0)
+    euler: tuple | None = (0.0, 0.0, 0.0)
     quat: tuple | None = None
     convexify: bool | None = None
     visualization: bool = True
@@ -15,7 +15,7 @@ class FileCfg:
 
 
 @configclass
-class UrdfFileCfg(FileCfg):
+class URDFCfg(FileCfg):
     fixed: bool = False
     prioritize__urdf_material: bool = False
     merge_fixed_links: bool = True
