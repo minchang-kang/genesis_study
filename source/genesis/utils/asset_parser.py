@@ -1,95 +1,96 @@
-import 
+from typing import Any
+import genesis as gs
+from genesis_study.source.genesis.assets.asset_base_cfg import *
+from genesis_study.source.genesis.assets.material_cfg import *
+from genesis_study.source.genesis.assets.surface_cfg import *
 
 
-
-
-
-
-def parse_morph(cfg: Any):
+def parse_morph(cfg):
     if isinstance(cfg, URDFCfg):
+        # quat = cfg.quat if cfg.quat is not None else quat_from_euler(cfg.euler)
         return gs.morphs.URDF(
             file=cfg.file,
+            scale=cfg.scale,
             pos=cfg.pos,
             quat=cfg.quat,
-            euler=cfg.euler,
-            scale=cfg.scale,
             fixed=cfg.fixed,
-            convexify=cfg.convexify,
-            visualization=cfg.visualization,
-            collision=cfg.colision,
-            requires_jacobian_and_ik=cfg.requires_jac_and_IK,
-            prioritize_urdf_material=cfg.prioritize__urdf_material,
-            merge_fixed_links=cfg.merge_fixed_links,
-            links_to_keep=cfg.links_to_keep,
         )
-    raise ValueError(f"[parse_morph] Unknown morph config type: {type(cfg)}")
+    elif isinstance(cfg, BoxCfg):
+        # quat = cfg.quat if cfg.quat is not None else quat_from_euler(cfg.euler)
+        return gs.morphs.Box(
+            size=cfg.size,
+            pos=cfg.pos,
+            quat=cfg.quat,
+        )
+    elif isinstance(cfg, MJCFCfg):
+        return gs.morphs.MJCF(
+            file=cfg.file,
+            scale=cfg.scale,
+            pos=cfg.pos,
+            quat=cfg.quat,
+        )
+    else:
+        raise TypeError(f"Unknown morph config type: {type(cfg)}")
 
-def parse_material(cfg: Any):
+
+def parse_material(cfg):
     if cfg is None:
         return None
     if isinstance(cfg, MaterialsCfg):
         return gs.materials.Rigid(rho=cfg.rho)
-    raise ValueError(f"[parse_material] Unknown material config type: {type(cfg)}")
+    raise TypeError(f"Unknown material config type: {type(cfg)}")
 
-def parse_surface(cfg: Any):
+
+def parse_surface(cfg):
     if cfg is None:
         return None
     if isinstance(cfg, SurfaceCfg):
-        return gs.surfaces.Default(
-            color=cfg.color,
-            vis_mode=cfg.vis_mode,
+        return gs.surfaces.Default(color=cfg.color, vis_mode=cfg.vis_mode)
+    raise TypeError(f"Unknown surface config type: {type(cfg)}")
+
+
+def create_scene_entity_from_cfg(scene, name, asset_cfg):
+    if isinstance(asset_cfg, EntityAssetCfg):
+        morph = parse_morph(asset_cfg.morph)
+        return scene.add_entity(
+            morph,
+            material=parse_material(asset_cfg.material),
+            surface=parse_surface(asset_cfg.surface),
+            visualize_contact=asset_cfg.visualize_contact,
+            vis_mode=asset_cfg.vis_mode,
         )
-    raise ValueError(f"[parse_surface] Unknown surface config type: {type(cfg)}")
 
-def _create_scene_entities(scene, name, asset_cfg):
-    """Scene에 엔티티 자동 추가."""
+    elif isinstance(asset_cfg, LightAssetCfg):
+        morph = parse_morph(asset_cfg.morph)
+        return scene.add_light(
+            morph,
+            color=asset_cfg.color,
+            intensity=asset_cfg.intensity,
+            revert_dir=asset_cfg.revert_dir,
+            double_sided=asset_cfg.double_sided,
+            beam_angle=asset_cfg.beam_angle,
+        )
 
-    if isinstance(self.cfg.scene, dict):
-        scene_items = self.cfg.scene.items()
-    else:
-        scene_items = self.cfg.scene.__dict__.items()
+    elif isinstance(asset_cfg, CameraAssetCfg):
+        return scene.add_camera(
+            model=asset_cfg.model,
+            res=asset_cfg.res,
+            pos=asset_cfg.pos,
+            lookat=asset_cfg.lookat,
+            up=asset_cfg.up,
+            fov=asset_cfg.fov,
+            aperture=asset_cfg.aperture,
+            focus_dist=asset_cfg.focus_dist,
+            GUI=asset_cfg.GUI,
+            spp=asset_cfg.spp,
+            denoise=asset_cfg.denoise,
+        )
 
-    handler_map = {
-        EntityAssetCfg: lambda cfg: self.scene.add_entity(
-            morph=parse_morph(cfg.morph),
-            material=parse_material(cfg.material),
-            surface=parse_surface(cfg.surface),
-            visualize_contact=cfg.visualize_contact,
-            vis_mode=cfg.vis_mode,
-        ),
-        LightAssetCfg: lambda cfg: self.scene.add_light(
-            morph=parse_morph(cfg.morph),
-            color=cfg.color,
-            intensity=cfg.intensity,
-            revert_dir=cfg.revert_dir,
-            double_sided=cfg.double_sided,
-            beam_angle=cfg.beam_angle,
-        ),
-        CameraAssetCfg: lambda cfg: self.scene.add_camera(
-            model=cfg.model,
-            res=cfg.res,
-            pos=cfg.pos,
-            lookat=cfg.lookat,
-            up=cfg.up,
-            fov=cfg.fov,
-            aperture=cfg.aperture,
-            focus_dist=cfg.focus_dist,
-            GUI=cfg.GUI,
-            spp=cfg.spp,
-            denoise=cfg.denoise,
-        ),
-        FluidEmitterAssetCfg: lambda cfg: self.scene.add_emitter(
-            material=parse_material(cfg.material),
-            max_particles=cfg.max_particles,
-            surface=parse_surface(cfg.surface),
-        ),
-    }
+    elif isinstance(asset_cfg, FluidEmitterAssetCfg):
+        return scene.add_emitter(
+            material=parse_material(asset_cfg.material),
+            max_particles=asset_cfg.max_particles,
+            surface=parse_surface(asset_cfg.surface),
+        )
 
-    for name, asset_cfg in scene_items:
-        if asset_cfg is None:
-            continue
-        for asset_type, handler in handler_map.items():
-            if isinstance(asset_cfg, asset_type):
-                entity = handler(asset_cfg)
-                setattr(self, name, entity)
-                break
+    return None

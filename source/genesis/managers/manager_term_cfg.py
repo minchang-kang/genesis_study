@@ -10,19 +10,27 @@ from genesis_study.source.genesis.utils.noise.noise_cfg import NoiseCfg
 from genesis_study.source.genesis.utils.modifiers.modifier_cfg import ModifierCfg
 
 if TYPE_CHECKING:
+    from genesis_study.source.genesis.managers.action_manager import ActionTerm
     from genesis_study.source.genesis.managers.manager_base import ManagerTermBase
 
 # from .scene_entity_cfg import SceneEntityCfg
 
+@configclass
+class ActionTermCfg:
+    class_type: type[ActionTerm] = MISSING
 
+    asset_name: str = MISSING
 
+    debug_vis: bool = False
+
+    clip: dict[str, tuple] | None = None
 
 @configclass
 class ManagerTermBaseCfg:
 
     func: Callable | ManagerTermBase = MISSING
 
-    params: dict[str, Any] = dict()
+    params: dict[str, Any | SceneEntityCfg] = dict()
 
 
 @configclass

@@ -24,6 +24,18 @@ class URDFCfg(FileCfg):
     merge_fixed_links: bool = True
     links_to_keep: list[str] = []
 
+@configclass
+class MJCFCfg:
+    file: str = MISSING
+    scale: float | tuple = 1.0
+    pos: tuple = (0.0, 0.0, 0.0)
+    euler: tuple | None = (0.0, 0.0, 0.0)
+    quat: tuple | None = None
+    convexify: bool | None = None
+    visualization: bool = True
+    colision: bool = True
+    requires_jac_and_IK: bool = True
+
 
 # ========================= Primitive =========================
 @configclass

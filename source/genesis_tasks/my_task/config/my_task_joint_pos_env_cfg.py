@@ -1,27 +1,6 @@
-# Copyright (c) 2022-2025, The Isaac Lab Project Developers.
-# All rights reserved.
-#
-# SPDX-License-Identifier: BSD-3-Clause
-
-from isaaclab.assets import RigidObjectCfg
-from isaaclab.managers import EventTermCfg as EventTerm
-from isaaclab.managers import SceneEntityCfg
-from isaaclab.sensors import FrameTransformerCfg
-from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
-from isaaclab.sim.schemas.schemas_cfg import RigidBodyPropertiesCfg
-from isaaclab.sim.spawners.from_files.from_files_cfg import UsdFileCfg
 from genesis_study.source.genesis.utils import configclass
-from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
-from isaaclab_tasks.manager_based.manipulation.stack import mdp
-from isaaclab_tasks.manager_based.manipulation.stack.mdp import franka_stack_events
 from genesis_study.source.genesis_tasks.my_task.my_task_env_cfg import TaskEnvCfg
-
-##
-# Pre-defined configs
-##
-from isaaclab.markers.config import FRAME_MARKER_CFG  # isort: skip
-from isaaclab_assets.robots.franka import FRANKA_PANDA_CFG  # isort: skip
 
 
 @configclass

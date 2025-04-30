@@ -1,15 +1,16 @@
 from dataclasses import MISSING
-import genesis as gs
 
 from .morph_cfg import *
+from .material_cfg import MaterialsCfg
+from .surface_cfg import SurfaceCfg
 from genesis_study.source.genesis.utils import configclass
 
 
 @configclass
 class EntityAssetCfg:
     morph: URDFCfg = MISSING
-    material: gs.materials.Rigid | None = None
-    surface: gs.surfaces.Surface | None = None
+    material: MaterialsCfg | None = None
+    surface: SurfaceCfg | None = None
     visualize_contact: bool = False
     vis_mode: str | None= None
 
@@ -41,6 +42,6 @@ class CameraAssetCfg:
 
 @configclass
 class FluidEmitterAssetCfg:
-    material: gs.materials = MISSING
+    material: MaterialsCfg = MISSING
     max_particles: int = 20000
-    surface: gs.surfaces.Surface | None = None
+    surface: SurfaceCfg | None = None

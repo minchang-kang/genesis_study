@@ -1,12 +1,14 @@
 import math
 import torch
+import numpy as np
 import gymnasium as gym
 from typing import Any, ClassVar, Sequence
 
 import genesis as gs
 from genesis_study.source.genesis.assets.asset_base_cfg import *
 from genesis_study.source.genesis.envs.manager_based_rl_env_cfg import ManagerBasedRLEnvCfg
-# from genesis_study.source.genesis.managers import CommandManager, CurriculumManager, RewardManager, TerminationManager
+from genesis_study.source.genesis.utils.asset_parser import create_scene_entity_from_cfg
+from genesis_study.source.genesis.managers import CommandManager, CurriculumManager, RewardManager, TerminationManager, RewardManager, ActionManager, ObservationManager, EventManager
 from genesis_study.source.genesis.envs.common import VecEnvStepReturn, VecEnvObs
 
 
@@ -23,6 +25,7 @@ class ManagerBasedRLEnv(gym.Env):
         # 기본 config 저장
         self.cfg = cfg
         self.render_mode = render_mode
+        self._is_closed = False
 
         # simulation counter
         self._sim_step_counter = 0
@@ -73,18 +76,17 @@ class ManagerBasedRLEnv(gym.Env):
         속도 측면에서 더 빠르다고 한다. -- chat.gpt --
         """
         # self.obs_buf = torch.zeros((self.num_envs, self.num_obs), device=self.device, dtype=gs.tc_float)
-        # self.reward_buf = torch.zeros((self.num_envs,), device=self.device, dtype=gs.tc_float)
-        # self.reset_buf = torch.ones((self.num_envs,), device=self.device, dtype=gs.tc_int)
-        # self.episode_length_buf = torch.zeros((self.num_envs,), device=self.device, dtype=torch.long)
+        self.reward_buf = torch.zeros((self.num_envs,), device=self.device, dtype=gs.tc_float)
+        self.reset_buf = torch.ones((self.num_envs,), device=self.device, dtype=gs.tc_int)
+        self.episode_length_buf = torch.zeros((self.num_envs,), device=self.device, dtype=torch.long)
 
         # Manager 초기화
-        # self._load_managers()
-
-        # Gym 관찰 공간/액션 공간 설정
-        # self._configure_gym_spaces()
+        # self.load_managers()
 
         # Physics 빌드
         self.scene.build(n_envs=self.cfg.num_envs)
+
+        # self.event_manager = EventManager(self.cfg.events, self)
 
         print("[INFO] Genesis ManagerBasedRLEnv 초기화 완료.")
 
@@ -93,82 +95,92 @@ class ManagerBasedRLEnv(gym.Env):
         print(f"\tPhysics step-size     : {self.physics_dt}")
         print(f"\tEnvironment step-size : {self.step_dt}")
 
+    @property
+    def max_episode_length_s(self) -> float:
+        """Maximum episode length in seconds."""
+        return self.cfg.episode_length_s
+
+    @property
+    def max_episode_length(self) -> int:
+        """Maximum episode length in environment steps."""
+        return math.ceil(self.max_episode_length_s / self.step_dt)
+
+
+
+
     def _create_scene_entities(self):
-
-        """Scene에 엔티티 추가 (plane, robot, objects, lights 등)."""
-
-        if isinstance(self.cfg.scene, dict):
-            scene_items=self.cfg.scene.items()
-        else:
-            scene_items=self.cfg.scene.__dict__.items()
-
-        for name, asset_cfg in scene_items:
+        for name, asset_cfg in self.cfg.scene.__dict__.items():
             if asset_cfg is None:
                 continue
-
-            if isinstance(asset_cfg, EntityAssetCfg):
-                entitiy = self.scene.add_entity(
-                    # gs.morphs.URDF(file=morph.file, pos=morph.pos, quat=morph.quat, fixed=morph.fixe),
-                    asset_cfg.morph,
-                    material=asset_cfg.material,
-                    surface=asset_cfg.surface,
-                    visualize_contact=asset_cfg.visualize_contact,
-                    vis_mode=asset_cfg.vis_mode)
-                setattr(self, name, entitiy)
-
-            elif isinstance(asset_cfg, LightAssetCfg):
-                entitiy =self.scene.add_light(
-                    asset_cfg.morph,
-                    color= asset_cfg.color,
-                    intensity=asset_cfg.intensity,
-                    revert_dir=asset_cfg.revert_dir,
-                    double_sided=asset_cfg.double_sided,
-                    beam_angle=asset_cfg.beam_angle,
-                )
-                setattr(self, name, entitiy)
-
-            elif isinstance(asset_cfg, CameraAssetCfg):
-                entitiy = self.scene.add_camera(
-                    model=asset_cfg.model,
-                    res=asset_cfg.res,
-                    pos=asset_cfg.pos,
-                    lookat=asset_cfg.lookat,
-                    up=asset_cfg.up,
-                    fov=asset_cfg.fov,
-                    aperture=asset_cfg.aperture,
-                    focus_dist=asset_cfg.focus_dist,
-                    GUI=asset_cfg.GUI,
-                    spp=asset_cfg.spp,
-                    denoise=asset_cfg.denoise,
-                    )
-                setattr(self, name, entitiy)
-
-            elif isinstance(asset_cfg, FluidEmitterAssetCfg):
-                entitiy = self.scene.add_emitter(
-                    material=asset_cfg.material,
-                    max_particles=asset_cfg.max_particles,
-                    surface=asset_cfg.surface,
-                )
-                setattr(self, name, entitiy)
+            entity = create_scene_entity_from_cfg(self.scene, name, asset_cfg)
+            if entity is not None:
+                setattr(self, name, entity)
 
 
-    # def _load_managers(self):
-    #     """강화학습 Manager 세팅."""
-    #     self.command_manager = CommandManager(self.cfg.commands, self)
-    #     self.reward_manager = RewardManager(self.cfg.rewards, self)
+    # def load_managers(self):
+    #     # note: this order is important since observation manager needs to know the command and action managers
+    #     # and the reward manager needs to know the termination manager
+    #     print("[INFO] Event Manager: ", self.event_manager)
+
+    #     # -- command manager
+    #     self.command_manager: CommandManager = CommandManager(self.cfg.commands, self)
+    #     print("[INFO] Command Manager: ", self.command_manager)
+
+    #     # prepare the managers
+    #     # -- termination manager
     #     self.termination_manager = TerminationManager(self.cfg.terminations, self)
+    #     print("[INFO] Termination Manager: ", self.termination_manager)
+
+    #     # -- reward manager
+    #     self.reward_manager = RewardManager(self.cfg.rewards, self)
+    #     print("[INFO] Reward Manager: ", self.reward_manager)
+
+    #     # -- curriculum manager
     #     self.curriculum_manager = CurriculumManager(self.cfg.curriculum, self)
+    #     print("[INFO] Curriculum Manager: ", self.curriculum_manager)
 
-    # def _configure_gym_spaces(self):
-    #     """Gymnasium용 observation_space, action_space 설정."""
-    #     # 예시로 dummy 설정 (나중에 observation_manager 정보 기반으로 정확히 구성)
-    #     self.single_observation_space = gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(10,))
-    #     self.single_action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(5,))
+    #     # print("[INFO] Recorder Manager: ", self.recorder_manager)
 
-    #     self.observation_space = gym.vector.utils.batch_space(self.single_observation_space, self.num_envs)
-    #     self.action_space = gym.vector.utils.batch_space(self.single_action_space, self.num_envs)
+    #     # -- action manager
+    #     self.action_manager = ActionManager(self.cfg.actions, self)
+    #     print("[INFO] Action Manager: ", self.action_manager)
 
-    # # 이후 step(), reset()은 아까 정리한대로 추가
+    #     # -- observation manager
+    #     self.observation_manager = ObservationManager(self.cfg.observations, self)
+    #     print("[INFO] Observation Manager:", self.observation_manager)
+
+    #     # setup the action and observation spaces for Gym
+    #     self._configure_gym_env_spaces()
+
+    #     # perform events at the start of the simulation
+    #     if "startup" in self.event_manager.available_modes:
+    #         self.event_manager.apply(mode="startup")
+
+
+    def _configure_gym_env_spaces(self):
+        """Configure the action and observation spaces for the Gym environment."""
+        # observation space (unbounded since we don't impose any limits)
+        self.single_observation_space = gym.spaces.Dict()
+        for group_name, group_term_names in self.observation_manager.active_terms.items():
+            # extract quantities about the group
+            has_concatenated_obs = self.observation_manager.group_obs_concatenate[group_name]
+            group_dim = self.observation_manager.group_obs_dim[group_name]
+            # check if group is concatenated or not
+            # if not concatenated, then we need to add each term separately as a dictionary
+            if has_concatenated_obs:
+                self.single_observation_space[group_name] = gym.spaces.Box(low=-np.inf, high=np.inf, shape=group_dim)
+            else:
+                self.single_observation_space[group_name] = gym.spaces.Dict({
+                    term_name: gym.spaces.Box(low=-np.inf, high=np.inf, shape=term_dim)
+                    for term_name, term_dim in zip(group_term_names, group_dim)
+                })
+        # action space (unbounded since we don't impose any limits)
+        action_dim = sum(self.action_manager.action_term_dim)
+        self.single_action_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(action_dim,))
+
+        # batch the spaces for vectorized environments
+        self.observation_space = gym.vector.utils.batch_space(self.single_observation_space, self.num_envs)
+        self.action_space = gym.vector.utils.batch_space(self.single_action_space, self.num_envs)
 
 
     # articulation kenematics, recorder 부분 일단 스킵
@@ -308,12 +320,12 @@ class ManagerBasedRLEnv(gym.Env):
             del self.reward_manager
             del self.termination_manager
             del self.curriculum_manager
-            del self.viewport_camera_controller
             del self.action_manager
             del self.observation_manager
             del self.event_manager
-            del self.recorder_manager
             del self.scene
+            # del self.viewport_camera_controller
+            # del self.recorder_manager
             # # clear callbacks and instance
             # self.sim.clear_all_callbacks()
             # self.sim.clear_instance()

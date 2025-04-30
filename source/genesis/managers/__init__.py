@@ -1,3 +1,9 @@
-# from .action_manager import *
 from .manager_base import *
 from .manager_term_cfg import *
+from .action_manager import *
+from .command_manager import *
+from .curriculum_manager import *
+from .event_manager import *
+from .observation_manager import *
+from .reward_manager import *
+from .termination_manager import *
