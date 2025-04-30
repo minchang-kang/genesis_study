@@ -1,6 +1,9 @@
 from dataclasses import MISSING
 from genesis_study.source.genesis.utils import configclass
 
+
+
+# ========================= FileMorph ==========================
 @configclass
 class FileCfg:
     file: str = MISSING
@@ -20,3 +23,14 @@ class URDFCfg(FileCfg):
     prioritize__urdf_material: bool = False
     merge_fixed_links: bool = True
     links_to_keep: list[str] = []
+
+
+# ========================= Primitive =========================
+@configclass
+class BoxCfg:
+    pos: tuple[float, float, float] = MISSING
+    euler: tuple[float, float, float] | None = None
+    quat: tuple[float, float, float, float] | None = None
+    size: tuple[float, float, float] | None = None
+    collision: bool = True
+    fixed: bool = False

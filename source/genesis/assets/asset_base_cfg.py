@@ -1,7 +1,7 @@
 from dataclasses import MISSING
 import genesis as gs
 
-from .from_file_cfg import *
+from .morph_cfg import *
 from genesis_study.source.genesis.utils import configclass
 
 

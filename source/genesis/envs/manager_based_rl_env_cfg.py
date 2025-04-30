@@ -1,8 +1,10 @@
-from dataclasses import MISSING
-from typing import Optional
-
 import genesis as gs
 
+from dataclasses import MISSING
+from typing import Optional
+from genesis_study.source.genesis.utils import configclass
+
+@configclass
 class ManagerBasedRLEnvCfg:
     # =========== Scene setting ===========
     # sim_options

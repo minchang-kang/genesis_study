@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 from abc import ABC
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
-from .manager_term_cfg import ManagerTermBaseCfg
+from genesis_study.source.genesis.managers.manager_term_cfg import ManagerTermBaseCfg
 
 if TYPE_CHECKING:
-    from ..envs.manager_based_rl_env import ManagerBasedRLEnv
+    from genesis_study.source.genesis.envs.manager_based_rl_env import ManagerBasedRLEnv
 
 
 class ManagerTermBase(ABC):

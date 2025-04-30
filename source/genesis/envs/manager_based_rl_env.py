@@ -4,9 +4,10 @@ import gymnasium as gym
 from typing import Any, ClassVar, Sequence
 
 import genesis as gs
+from genesis_study.source.genesis.assets.asset_base_cfg import *
 from genesis_study.source.genesis.envs.manager_based_rl_env_cfg import ManagerBasedRLEnvCfg
-from genesis_study.source.genesis.managers import CommandManager, CurriculumManager, RewardManager, TerminationManager
-from .common import VecEnvStepReturn, VecEnvObs
+# from genesis_study.source.genesis.managers import CommandManager, CurriculumManager, RewardManager, TerminationManager
+from genesis_study.source.genesis.envs.common import VecEnvStepReturn, VecEnvObs
 
 
 class ManagerBasedRLEnv(gym.Env):
@@ -17,8 +18,12 @@ class ManagerBasedRLEnv(gym.Env):
         "render_modes": [None, "human", "rgb_array"],
     }
 
-    def __init__(self, cfg: ManagerBasedRLEnvCfg, render_mode: str | None = None):
+    def __init__(self, cfg: ManagerBasedRLEnvCfg, render_mode: str | None = None, **kwargs):
         """환경 초기화"""
+        # 기본 config 저장
+        self.cfg = cfg
+        self.render_mode = render_mode
+
         # simulation counter
         self._sim_step_counter = 0
 
@@ -28,9 +33,28 @@ class ManagerBasedRLEnv(gym.Env):
         # info 저장 공간 설정
         self.extras = {}
 
-        # 기본 config 저장
-        self.cfg = cfg
-        self.render_mode = render_mode
+        # Scene, add, build 도 모듈화 가능해 보임
+        # Scene 설정 
+        self.scene = gs.Scene(
+            sim_options=gs.options.SimOptions(dt=self.cfg.dt, substeps=self.cfg.substeps),
+            rigid_options=gs.options.RigidOptions(
+                constraint_solver=self.cfg.constraint_solver,
+                enable_collision=self.cfg.enable_collision,
+                enable_joint_limit=self.cfg.enable_joint_limit,
+            ),
+            viewer_options=gs.options.ViewerOptions(
+                max_FPS=int(0.5 / self.cfg.dt),
+                camera_pos=self.cfg.camera_pos,
+                camera_lookat=self.cfg.camera_lookat,
+                camera_fov=self.cfg.camera_fov,
+            ),
+            vis_options=gs.options.VisOptions(rendered_envs_idx=self.cfg.rendered_envs_idx),
+            show_viewer=self.cfg.show_viewer,
+            show_FPS=self.cfg.show_FPS,
+        )
+
+        # Scene 안에 Plane, Robot, Light 추가
+        self._create_scene_entities()
 
         # 디바이스 설정
         self.device = torch.device(self.cfg.device)
@@ -48,40 +72,16 @@ class ManagerBasedRLEnv(gym.Env):
         수천 수만번 반복하는 환경에서는 메소드 내에서 생성하는것 보다는 init에서 정의를 해두는것이
         속도 측면에서 더 빠르다고 한다. -- chat.gpt --
         """
-        self.obs_buf = torch.zeros((self.num_envs, self.num_obs), device=self.device, dtype=gs.tc_float)
-        self.reward_buf = torch.zeros((self.num_envs,), device=self.device, dtype=gs.tc_float)
-        self.reset_buf = torch.ones((self.num_envs,), device=self.device, dtype=gs.tc_int)
-        self.episode_length_buf = torch.zeros((self.num_envs,), device=self.device, dtype=torch.long)
+        # self.obs_buf = torch.zeros((self.num_envs, self.num_obs), device=self.device, dtype=gs.tc_float)
+        # self.reward_buf = torch.zeros((self.num_envs,), device=self.device, dtype=gs.tc_float)
+        # self.reset_buf = torch.ones((self.num_envs,), device=self.device, dtype=gs.tc_int)
+        # self.episode_length_buf = torch.zeros((self.num_envs,), device=self.device, dtype=torch.long)
 
         # Manager 초기화
         # self._load_managers()
 
         # Gym 관찰 공간/액션 공간 설정
         # self._configure_gym_spaces()
-
-
-        # Scene, add, build 도 모듈화 가능해 보임
-        # Scene 설정 
-        self.scene = gs.Scene(
-            sim_options=gs.options.SimOptions(dt=self.cfg.dt, substeps=self.cfg.substeps),
-            rigid_options=gs.options.RigidOptions(
-                constraint_solver=self.cfg.constraint_solver,
-                enable_collision=self.cfg.enable_collision,
-                enable_joint_limit=self.cfg.enable_joint_limit,
-            ),
-            viewer_options=gs.options.ViewerOptions(
-                max_FPS=int(0.5 / self.cfg.dt),
-                camera_pos=self.cfg.camera_pos,
-                camera_lookat=self.cfg.camera_lookat,
-                camera_fov=self.cfg.camera_fov,
-                show_FPS=self.cfg.show_FPS,
-            ),
-            vis_options=gs.options.VisOptions(rendered_envs_idx=self.cfg.rendered_envs_idx),
-            show_viewer=self.cfg.show_viewer,
-        )
-
-        # Scene 안에 Plane, Robot, Light 추가
-        self._create_scene_entities()
 
         # Physics 빌드
         self.scene.build(n_envs=self.cfg.num_envs)
@@ -96,40 +96,39 @@ class ManagerBasedRLEnv(gym.Env):
     def _create_scene_entities(self):
 
         """Scene에 엔티티 추가 (plane, robot, objects, lights 등)."""
-        # 예를 들면:
+
         if isinstance(self.cfg.scene, dict):
             scene_items=self.cfg.scene.items()
         else:
             scene_items=self.cfg.scene.__dict__.items()
-        
-        for _, asset_cfg in scene_items:
+
+        for name, asset_cfg in scene_items:
             if asset_cfg is None:
                 continue
 
-            asset_cfg_class=type(asset_cfg).__class__
-
-            if "EntityAssetCfg" in asset_cfg_class:
-                morph = asset_cfg.morph
-                self.scene.add_entity(
-                    gs.morphs.URDF(file=morph.file, pos=morph.pos, quat=morph.quat, fixed=morph.fixe),
+            if isinstance(asset_cfg, EntityAssetCfg):
+                entitiy = self.scene.add_entity(
+                    # gs.morphs.URDF(file=morph.file, pos=morph.pos, quat=morph.quat, fixed=morph.fixe),
+                    asset_cfg.morph,
                     material=asset_cfg.material,
                     surface=asset_cfg.surface,
                     visualize_contact=asset_cfg.visualize_contact,
                     vis_mode=asset_cfg.vis_mode)
+                setattr(self, name, entitiy)
 
-            elif "LightAssetCfg" in asset_cfg_class:
-                morph = asset_cfg.morph
-                self.scene.add_light(
-                    gs.morphs.URDF(file=morph.file, pos=morph.pos, quat=morph.quat, fixed=morph.fixe),
+            elif isinstance(asset_cfg, LightAssetCfg):
+                entitiy =self.scene.add_light(
+                    asset_cfg.morph,
                     color= asset_cfg.color,
                     intensity=asset_cfg.intensity,
                     revert_dir=asset_cfg.revert_dir,
                     double_sided=asset_cfg.double_sided,
                     beam_angle=asset_cfg.beam_angle,
                 )
+                setattr(self, name, entitiy)
 
-            elif "CameraAssetCfg" in asset_cfg_class:
-                self.scene.add_camera(
+            elif isinstance(asset_cfg, CameraAssetCfg):
+                entitiy = self.scene.add_camera(
                     model=asset_cfg.model,
                     res=asset_cfg.res,
                     pos=asset_cfg.pos,
@@ -142,13 +141,15 @@ class ManagerBasedRLEnv(gym.Env):
                     spp=asset_cfg.spp,
                     denoise=asset_cfg.denoise,
                     )
+                setattr(self, name, entitiy)
 
-            elif "FluidEmitterAssetCfg" in asset_cfg_class:
-                self.scene.add_emitter(
+            elif isinstance(asset_cfg, FluidEmitterAssetCfg):
+                entitiy = self.scene.add_emitter(
                     material=asset_cfg.material,
                     max_particles=asset_cfg.max_particles,
                     surface=asset_cfg.surface,
                 )
+                setattr(self, name, entitiy)
 
 
     # def _load_managers(self):
